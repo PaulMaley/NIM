@@ -20,10 +20,10 @@ main = do
 
 loop :: State -> IO State
 loop state = do
-               putStrLn (show state) 
+               putStrLn (display state) 
                choice <- getInput
                let state' = move state choice 
-               putStrLn (show state')        -- State after player's move
+               putStrLn (display state')        -- State after player's move
                if (gameOver state') 
                then do
                  putStrLn "Computor wins!"
@@ -43,6 +43,12 @@ setup n = zip "ABCDEFG" [1..n]
 
 gameOver :: State -> Bool
 gameOver s = all ((== 0) . snd) s
+
+-- nicer display of state
+display :: State -> String
+display s = foldr ((++) . f) "" s
+            where
+              f e = (fst e): ": " ++ (replicate (snd e) '*') ++ "  "
 
 -- Game mechanics (no error checking !)
 move :: State -> Move -> State
