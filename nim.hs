@@ -21,16 +21,16 @@ main = do
 loop :: State -> IO State
 loop state = do
                putStrLn (display state) 
-               choice <- getInput
-               let state' = move state choice 
+               playerMove <- getValidInput state
+               let state' = move state playerMove 
                putStrLn (display state')        -- State after player's move
                if (gameOver state') 
                then do
                  putStrLn "Computor wins!"
                  return state
                else do 
-                 choice' <- comp state'
-                 let state'' = move state' choice' -- Computor moves 
+                 computorMove <- comp state'
+                 let state'' = move state' computorMove 
                  if (gameOver state'')
                  then do
                    putStrLn "You win!" -- Computor took last object
@@ -43,6 +43,11 @@ setup n = zip "ABCDEFG" [1..n]
 
 gameOver :: State -> Bool
 gameOver s = all ((== 0) . snd) s
+
+-- function to determine whether a move is valid
+validQ :: State -> Move -> Bool
+validQ s (_,0) = False -- At least one thing must be removed !!
+validQ s (c,n) = any (\(c',n') -> ((c==c') && (n<=n'))) s
 
 -- nicer display of state
 display :: State -> String
@@ -64,13 +69,38 @@ comp s = do
                pile = l !!  fst (randomR (0, (length l)-1) gen) 
            return (pile,1)     
 
+-- Get a player move from std in. Try to accept anything 
+-- of the form "a2" "A 2" "A2" .. that can be understood
+-- as a letter and a number. The validity of a move (function
+-- of the state) is determined elsewhere.
+
+getValidInput :: State -> IO Move
+getValidInput state = do
+                        move <- getInput
+                        if validQ state move then
+                          return move
+                        else
+                          getValidInput state 
+
 getInput :: IO Move
 getInput = do
              putStrLn "Enter move"
              input <- getLine
-             let c:n:[] = words input
-             return (toUpper (head c), read n :: Int)
+             let m = parseInput input in case m of
+               Nothing -> getInput
+               Just v  -> return v  
 
+parseInput :: String -> Maybe Move
+parseInput str = let str' = (filter isAlphaNum str) in
+                 case str' of 
+                   c:[] -> Nothing 
+                   c:n:_ -> if (isLetter c) && (isDigit n) then 
+                              Just (toUpper c, digitToInt n)
+                            else 
+                              Nothing 
+  
+   
+            
 parse :: [String] -> IO String 
 parse ["-v"] = (putStrLn version) >> exit
 parse ["-h"] = putStrLn usage >> exit
@@ -80,6 +110,6 @@ version :: String
 version = "Nim v1.0 beta"
 
 usage :: String
-usage = "nim n (where n is a natural number)"
+usage = "nim n (where n is a natural number < 10)"
 
 exit = exitWith ExitSuccess
