@@ -9,8 +9,9 @@ import Data.Char
 import Data.List
 import System.Random
 
-type State = [(Char,Int)]
-type Move = (Char,Int)
+import Types
+--type State = [(Char,Int)]
+--type Move = (Char,Int)
 
 main = do 
          args <- getArgs
