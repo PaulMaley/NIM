@@ -10,17 +10,18 @@ import Data.List
 import System.Random
 
 import Types
+import RandomPlayer
 --type State = [(Char,Int)]
 --type Move = (Char,Int)
 
 main = do 
          args <- getArgs
          nstr <- parse args
-         gen <- getStdGen
-         loop (setup (read nstr :: Int))  
+         rplayer <- getStdGen
+         loop rplayer (setup (read nstr :: Int))  
 
-loop :: State -> IO State
-loop state = do
+loop :: RPlayer -> State -> IO State
+loop rp state = do
                putStrLn (display state) 
                playerMove <- getValidInput state
                let state' = move state playerMove 
@@ -30,14 +31,14 @@ loop state = do
                  putStrLn "Computor wins!"
                  return state
                else do 
-                 computorMove <- comp state'
+                 (computorMove,rp') <- getCompInput state' rp
                  let state'' = move state' computorMove 
                  if (gameOver state'')
                  then do
                    putStrLn "You win!" -- Computor took last object
                    return state''
                  else do
-                   loop state''
+                   loop rp' state''
 
 setup :: Int -> State
 setup n = zip "ABCDEFG" [1..n]
@@ -61,14 +62,6 @@ move :: State -> Move -> State
 move s m = map (\(c,n) -> if (c /= (fst m)) 
                           then (c,n) 
                           else (c,n-(snd m))) s
-
--- Computor move (takes one off a random pile)
-comp :: State -> IO Move
-comp s = do
-           gen <- newStdGen
-           let l = map fst $ filter ((/= 0) . snd) s
-               pile = l !!  fst (randomR (0, (length l)-1) gen) 
-           return (pile,1)     
 
 -- Get a player move from std in. Try to accept anything 
 -- of the form "a2" "A 2" "A2" .. that can be understood
